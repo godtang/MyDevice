@@ -1,4 +1,5 @@
 ﻿using log4net;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,7 @@ namespace MyDevice
 
         public static void RecvThread()
         {
+            string a = GetAllIP();
             int destPort = 40000;
             Socket sock2 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -54,13 +56,24 @@ namespace MyDevice
             EndPoint ep = (EndPoint)iep;
             while (true)
             {
-                logger.Debug("Ready to receive…");
-                byte[] data = new byte[1024];
-                int recv = sock2.ReceiveFrom(data, ref ep);
-                byte[] decryptData = Des.Decrypt(data, recv, "abcd1234");
-                string stringData = Encoding.ASCII.GetString(decryptData, 0, decryptData.Length);
+                try
+                {
+                    logger.Debug("Ready to receive…");
+                    byte[] data = new byte[1024];
+                    int recv = sock2.ReceiveFrom(data, ref ep);
+                    byte[] decryptData = Des.Decrypt(data, recv, "abcd1234");
+                    string stringData = Encoding.ASCII.GetString(decryptData, 0, decryptData.Length);
 
-                logger.Info($"received: {stringData} from: {ep.ToString()}");
+                    logger.Info($"received: {stringData} from: {ep.ToString()}");
+
+                    JToken root = JToken.Parse(stringData);
+
+                    sendBroadcast("hello", (int)root["port"]);
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.ToString());
+                }
             }
 
         }
@@ -70,10 +83,26 @@ namespace MyDevice
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             IPEndPoint iep = new IPEndPoint(IPAddress.Broadcast, port);
             byte[] data = Encoding.UTF8.GetBytes(msg);
+            byte[] encryptData = Des.Encrypt(data, data.Length, "abcd1234");
             sock.SetSocketOption(SocketOptionLevel.Socket,
                        SocketOptionName.Broadcast, 1);
-            sock.SendTo(data, iep);
+            sock.SendTo(encryptData, iep);
             sock.Close();
+        }
+
+        public static string GetAllIP()
+        {
+            IPAddress[] IP = Dns.GetHostAddresses(Dns.GetHostName());
+            int m_count = IP.Length;
+            string m_AllIP = string.Empty;
+            for (int i = 0; i < m_count; i++)
+            {
+                if (i > 0)
+                    m_AllIP = m_AllIP + "|";
+                m_AllIP += IP[i].ToString();
+
+            }
+            return m_AllIP;
         }
     }
 }

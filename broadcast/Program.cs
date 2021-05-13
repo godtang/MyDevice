@@ -12,7 +12,7 @@ namespace broadcast
     {
         public static void sendBroadcast(string msg, int port)
         {
-            byte[] encryptData = Des.Encrypt(System.Text.Encoding.UTF8.GetBytes("aaaa"), "abcd1234");
+            byte[] encryptData = Des.Encrypt(System.Text.Encoding.UTF8.GetBytes(msg), "abcd1234");
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             IPEndPoint iep = new IPEndPoint(IPAddress.Broadcast, port);
             sock.SetSocketOption(SocketOptionLevel.Socket,
@@ -22,7 +22,8 @@ namespace broadcast
         }
         static void Main(string[] args)
         {
-            sendBroadcast("aaa", 40000);
+
+            sendBroadcast("{port:23456}", 40000);
         }
     }
 }
