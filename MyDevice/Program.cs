@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyDevice
@@ -14,6 +15,13 @@ namespace MyDevice
         /// </summary>
         static void Main()
         {
+            Service1 s = new Service1();
+            s.Start();
+            while (true)
+            {
+                Thread.Sleep(1);
+            }
+            return;
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[]
             {

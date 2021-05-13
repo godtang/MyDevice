@@ -17,12 +17,20 @@ namespace MyDevice
             InitializeComponent();
         }
 
+        private UdpCast udpCast = new UdpCast();
         protected override void OnStart(string[] args)
         {
+            udpCast.Start();
         }
 
         protected override void OnStop()
         {
+            udpCast.Stop();
+        }
+
+        public void Start()
+        {
+            OnStart(null);
         }
     }
 }
