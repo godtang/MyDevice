@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -11,6 +12,7 @@ namespace MyDevice
 {
     class UdpCast
     {
+        static ILog logger = LogManager.GetLogger("UB.File");
         Thread t = new Thread(new ThreadStart(RecvThread));
         public void Start()
         {
@@ -52,13 +54,13 @@ namespace MyDevice
             EndPoint ep = (EndPoint)iep;
             while (true)
             {
-                Console.WriteLine("Ready to receive…");
+                logger.Debug("Ready to receive…");
                 byte[] data = new byte[1024];
                 int recv = sock2.ReceiveFrom(data, ref ep);
                 byte[] decryptData = Des.Decrypt(data, recv, "abcd1234");
                 string stringData = Encoding.ASCII.GetString(decryptData, 0, decryptData.Length);
 
-                Console.WriteLine("received: {0} from: {1}", stringData, ep.ToString());
+                logger.Info($"received: {stringData} from: {ep.ToString()}");
             }
 
         }
