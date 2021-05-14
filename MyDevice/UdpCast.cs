@@ -26,9 +26,13 @@ namespace MyDevice
             t.Abort();
         }
 
+        enum RequestType
+        {
+            GET_IP = 1,
+        };
+
         public static void RecvThread()
         {
-            string a = GetAllIP();
             int destPort = 40000;
             Socket sock2 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -58,6 +62,7 @@ namespace MyDevice
             {
                 try
                 {
+                    string ip = GetLANIP();
                     logger.Debug("Ready to receive…");
                     byte[] data = new byte[1024];
                     int recv = sock2.ReceiveFrom(data, ref ep);
@@ -67,8 +72,18 @@ namespace MyDevice
                     logger.Info($"received: {stringData} from: {ep.ToString()}");
 
                     JToken root = JToken.Parse(stringData);
-
-                    sendBroadcast("hello", (int)root["port"]);
+                    switch ((RequestType)(int)root["type"])
+                    {
+                        case RequestType.GET_IP:
+                            JToken respObj = JToken.Parse("{}");
+                            respObj["ip"] = ip;
+                            byte[] respSrc = System.Text.Encoding.UTF8.GetBytes(respObj.ToString());
+                            byte[] respEncrypt = Des.Encrypt(respSrc, respSrc.Length, "abcd1234");
+                            sock2.SendTo(respEncrypt, 0, respEncrypt.Length, SocketFlags.None, ep);
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -78,31 +93,20 @@ namespace MyDevice
 
         }
 
-        public static void sendBroadcast(string msg, int port)
-        {
-            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            IPEndPoint iep = new IPEndPoint(IPAddress.Broadcast, port);
-            byte[] data = Encoding.UTF8.GetBytes(msg);
-            byte[] encryptData = Des.Encrypt(data, data.Length, "abcd1234");
-            sock.SetSocketOption(SocketOptionLevel.Socket,
-                       SocketOptionName.Broadcast, 1);
-            sock.SendTo(encryptData, iep);
-            sock.Close();
-        }
 
-        public static string GetAllIP()
+        public static string GetLANIP()
         {
             IPAddress[] IP = Dns.GetHostAddresses(Dns.GetHostName());
             int m_count = IP.Length;
-            string m_AllIP = string.Empty;
             for (int i = 0; i < m_count; i++)
             {
-                if (i > 0)
-                    m_AllIP = m_AllIP + "|";
-                m_AllIP += IP[i].ToString();
-
+                string ip = IP[i].ToString();
+                if (ip.IndexOf(":") < 0 && !ip.EndsWith(".1"))
+                {
+                    return ip;
+                }
             }
-            return m_AllIP;
+            return string.Empty;
         }
     }
 }

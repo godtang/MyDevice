@@ -18,11 +18,14 @@ namespace broadcast
             sock.SetSocketOption(SocketOptionLevel.Socket,
                        SocketOptionName.Broadcast, 1);
             sock.SendTo(encryptData, iep);
+            byte[] data = new byte[1024];
+            int recvLen = sock.Receive(data);
+            string stringData = Encoding.ASCII.GetString(data, 0, recvLen);
+            System.Console.WriteLine(stringData);
             sock.Close();
         }
         static void Main(string[] args)
         {
-
             sendBroadcast("{port:23456}", 40000);
         }
     }
